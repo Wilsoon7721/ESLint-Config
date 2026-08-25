@@ -58,8 +58,10 @@ export function readPkg(projectRoot) {
 }
 
 export function writePkg(pkg) {
-  const indent = pkg.raw.match(/^(\s+)"/m)?.[1] || '  ';
-  writeFileSync(pkg.path, JSON.stringify(pkg.json, null, indent) + '\n');
+  const indent = pkg.raw.match(/^([ \t]+)"/m)?.[1] || '  ';
+  const json = JSON.stringify(pkg.json, null, indent) + '\n';
+
+  writeFileSync(pkg.path, pkg.raw.includes('\r\n') ? json.replace(/\n/g, '\r\n') : json);
 }
 
 export function isSelfInstall(projectRoot) {
