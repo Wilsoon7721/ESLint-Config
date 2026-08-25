@@ -35,7 +35,7 @@
   },
   "homepage": "https://github.com/Wilsoon7721/ESLint-Config#readme",
   "license": "MIT",
-  "peerDependencies": {
+  "dependencies": {
     "eslint": "^10.0.0",
     "typescript-eslint": "^8.0.0",
     "@stylistic/eslint-plugin": "^3.0.0",

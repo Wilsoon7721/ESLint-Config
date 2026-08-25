@@ -7,8 +7,23 @@ Opinionated, autofixable ESLint + Prettier shared configuration for JavaScript a
 ## Quick Start
 
 ```bash
-npm install --save-dev @wilsoon/eslint-config eslint typescript-eslint @stylistic/eslint-plugin prettier
+npm install --save-dev @wilsoon/eslint-config
 ```
+
+This single install pulls in everything you need: ESLint, Prettier, the TypeScript parser, and the stylistic plugin.
+
+> **Note:** These tools are bundled as regular dependencies so you don't have to install them separately. If your project already uses a different major version of ESLint or Prettier, npm may install a second copy nested inside this package rather than warning about a conflict. If you'd prefer explicit control over tool versions, install them yourself and add the following to your `package.json` instead:
+>
+> ```json
+> "overrides": {
+>   "@wilsoon/eslint-config": {
+>     "eslint": "$eslint",
+>     "prettier": "$prettier"
+>   }
+> }
+> ```
+>
+> This tells npm to use your project's versions of those tools inside this package.
 
 ### Allowing the Setup Script (npm v12+)
 
