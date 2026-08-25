@@ -1,6 +1,6 @@
 {
   "name": "@wilsoon/eslint-config",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Opinionated ESLint + Prettier shared config with custom autofixable rules for cleaner JS/TS code.",
   "type": "module",
   "exports": {
@@ -11,6 +11,7 @@
     "postinstall": "node ./scripts/postinstall.js"
   },
   "files": [
+    "bin/",
     "eslint/",
     "prettier/",
     "scripts/",
@@ -43,5 +44,8 @@
     "typescript-eslint": "^8.0.0",
     "@stylistic/eslint-plugin": "^3.0.0",
     "prettier": "^3.0.0"
+  },
+  "bin": {
+    "wilsoon-lint-setup": "./bin/cli.js"
   }
 }

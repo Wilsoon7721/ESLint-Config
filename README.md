@@ -25,17 +25,34 @@ This single install pulls in everything you need: ESLint, Prettier, the TypeScri
 >
 > This tells npm to use your project's versions of those tools inside this package.
 
-### Allowing the Setup Script (npm v12+)
+### Setup
+
+After installing, run the setup command:
+
+```bash
+npx @wilsoon/eslint-config
+```
+
+It walks you through scaffolding the config files and the `lint` script, prompting before it touches anything that already exists. It is safe to re-run at any time - if your project is already set up, it says so and changes nothing.
+
+| Flag           | Effect                                                            |
+| -------------- | ----------------------------------------------------------------- |
+| `-y`, `--yes`  | Accept every prompt (replaces conflicting configs without asking) |
+| `-h`, `--help` | Show usage                                                        |
+
+### The Postinstall Script
+
+This package also ships a postinstall script that covers the common case automatically. Because npm runs lifecycle scripts with their output hidden and no usable input, **the postinstall script never asks questions and never overwrites anything**. It only creates what is missing:
+
+1. Creates `eslint.config.js` - only if no ESLint config exists.
+2. Creates `prettier.config.js` - only if no Prettier config exists.
+3. Adds `"lint": "eslint --fix . && prettier --write ."` - only if your `package.json` has no `lint` script.
+
+If all three are already present, it exits silently and does nothing. Anything that would require a decision - replacing an existing ESLint config, or a `lint` script that differs from the one above - is left to `npx @wilsoon/eslint-config`.
+
+#### Allowing the Postinstall Script (npm v12+)
 
 Starting with **npm v12**, postinstall scripts from dependencies are **blocked by default** for security. After installing, npm will notify you that this package has a script that wasn't run.
-
-This package ships a postinstall script that **scaffolds config files and adds a `lint` command** to your project - saving you from manual setup. It never modifies existing files without asking.
-
-Here's what it does (and nothing else):
-
-1. Creates `eslint.config.js` if one doesn't exist.
-2. Creates `prettier.config.js` if no Prettier config exists.
-3. Adds `"lint": "eslint --fix . && prettier --write ."` to your `package.json` scripts. If a `lint` script already exists, it asks before replacing it.
 
 To allow it, approve the package's scripts:
 
@@ -51,7 +68,7 @@ npm install
 
 > **Note:** The `allowScripts` entry is saved in your `package.json` and should be committed. Future installs will run the script automatically.
 
-If you'd rather not approve the script, you can [set everything up manually](#manual-setup) instead.
+You never have to approve it - running `npx @wilsoon/eslint-config` once does everything the postinstall script does, and more. Or [set everything up manually](#manual-setup).
 
 ---
 
@@ -59,7 +76,7 @@ If you'd rather not approve the script, you can [set everything up manually](#ma
 
 This package bundles **three custom ESLint rules**, a curated set of **stylistic ESLint rules**, and a **Prettier configuration** into a single installable dependency. Everything is autofixable - run one command and your code is reformatted.
 
-After setup, the only command you need is:
+After setup, the only command you need day to day is:
 
 ```bash
 npm run lint
@@ -173,7 +190,7 @@ The bundled Prettier config applies these settings:
 
 ## Manual Setup
 
-If you prefer not to use the postinstall script, or if you're on npm v12+ and don't want to trust the package, set things up by hand:
+If you'd rather not run either the setup command or the postinstall script, set things up by hand:
 
 ### 1. ESLint
 
