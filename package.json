@@ -1,0 +1,44 @@
+{
+  "name": "@wilsoon/eslint-config",
+  "version": "0.1.0",
+  "description": "Opinionated ESLint + Prettier shared config with custom autofixable rules for cleaner JS/TS code.",
+  "type": "module",
+  "exports": {
+    "./eslint": "./eslint/index.js",
+    "./prettier": "./prettier/index.js"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "files": [
+    "eslint/",
+    "prettier/",
+    "scripts/",
+    "README.md"
+  ],
+  "keywords": [
+    "eslint",
+    "eslint-config",
+    "prettier",
+    "prettier-config",
+    "linting",
+    "formatting",
+    "typescript",
+    "javascript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wilsoon7721/ESLint-Config.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Wilsoon7721/ESLint-Config/issues"
+  },
+  "homepage": "https://github.com/Wilsoon7721/ESLint-Config#readme",
+  "license": "MIT",
+  "peerDependencies": {
+    "eslint": "^10.0.0",
+    "typescript-eslint": "^8.0.0",
+    "@stylistic/eslint-plugin": "^3.0.0",
+    "prettier": "^3.0.0"
+  }
+}
