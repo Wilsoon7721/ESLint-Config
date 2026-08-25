@@ -37,21 +37,21 @@ Here's what it does (and nothing else):
 2. Creates `prettier.config.js` if no Prettier config exists.
 3. Adds `"lint": "eslint --fix . && prettier --write ."` to your `package.json` scripts. If a `lint` script already exists, it asks before replacing it.
 
-To allow it, run:
+To allow it, approve the package's scripts:
 
 ```bash
-npm trust @wilsoon/eslint-config
+npm approve-scripts @wilsoon/eslint-config
 ```
 
-Then reinstall so the script runs:
+This adds the package to an `allowScripts` field in your `package.json`. Then reinstall so the script runs:
 
 ```bash
 npm install
 ```
 
-> **Note:** `npm trust` is a one-time operation per package. Future installs and updates will run the script automatically.
+> **Note:** The `allowScripts` entry is saved in your `package.json` and should be committed. Future installs will run the script automatically.
 
-If you'd rather not trust the script, you can [set everything up manually](#manual-setup) instead.
+If you'd rather not approve the script, you can [set everything up manually](#manual-setup) instead.
 
 ---
 
