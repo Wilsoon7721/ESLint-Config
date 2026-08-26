@@ -44,9 +44,9 @@ if (argv.includes('-h') || argv.includes('--help')) {
 /** JS-style config files we can safely rewrite with an ESM template. */
 const REWRITABLE = /\.(js|mjs|cjs|ts|mts|cts)$/;
 
-function ask(question) {
+function ask(question, defaultYes = false) {
   if (assumeYes) return Promise.resolve('y');
-  if (!interactive) return Promise.resolve('n');
+  if (!interactive) return Promise.resolve(defaultYes ? 'y' : 'n');
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((res) => {
@@ -57,7 +57,7 @@ function ask(question) {
   });
 }
 
-const yes = (answer) => answer === 'y' || answer === 'yes';
+const yes = (answer, defaultYes = false) => (answer === '' ? defaultYes : answer === 'y' || answer === 'yes');
 
 /** True when `file` already holds exactly the template we would write. */
 function alreadyOurs(file, template) {
@@ -144,6 +144,18 @@ async function main() {
     setLintScript(state.pkg);
     log('✅', `Added "lint" script to package.json: '${LINT_CMD}'`);
     madeChanges = true;
+    console.log();
+  } else if (state.lintScriptIsLegacy) {
+    log('⚠️', `Your lint script is from an older version: '${state.lintScript}'`);
+    log('  ', `It hardcodes '.', so 'npm run lint src/' lints the whole project anyway.`);
+    log('  ', `The current script is:  '${LINT_CMD}'`);
+    if (yes(await ask('Update it? (Y/n) ', true), true)) {
+      setLintScript(state.pkg);
+      log('✅', 'Updated lint script in package.json');
+      madeChanges = true;
+    } else {
+      log('⏭️', 'Keeping existing lint script.');
+    }
     console.log();
   } else if (!state.lintScriptMatches) {
     log('⚠️', `Existing lint script: '${state.lintScript}'`);

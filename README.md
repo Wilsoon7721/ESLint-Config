@@ -46,7 +46,7 @@ This package also ships a postinstall script that covers the common case automat
 
 1. Creates `eslint.config.js` - only if no ESLint config exists.
 2. Creates `prettier.config.js` - only if no Prettier config exists.
-3. Adds `"lint": "eslint --fix . && prettier --write ."` - only if your `package.json` has no `lint` script.
+3. Adds `"lint": "wlint"` - only if your `package.json` has no `lint` script.
 
 If all three are already present, it exits silently and does nothing. Anything that would require a decision - replacing an existing ESLint config, or a `lint` script that differs from the one above - is left to `npx @wilsoon/eslint-config`.
 
@@ -81,6 +81,26 @@ After setup, the only command you need day to day is:
 ```bash
 npm run lint
 ```
+
+### Linting Specific Files
+
+`npm run lint` with no arguments fixes and formats the whole project. Pass files or directories to narrow it down - they are handed to both ESLint and Prettier:
+
+```bash
+npm run lint src/
+```
+
+```bash
+npm run lint src/app.ts components/ utils/helpers.js
+```
+
+Older npm versions require `--` before the arguments, which is always safe to include:
+
+```bash
+npm run lint -- src/
+```
+
+> **Note:** ESLint runs first. If it reports a problem it can't autofix, the command stops there and Prettier does not run, so formatting is never applied on top of failing code. The exit code is the failing tool's, which keeps it usable in CI.
 
 ---
 
@@ -231,10 +251,22 @@ Add to your `package.json`:
 ```json
 {
   "scripts": {
+    "lint": "wlint"
+  }
+}
+```
+
+`wlint` is the small runner shipped with this package. It forwards any files or directories you pass to both ESLint and Prettier, defaulting to the whole project. If you would rather not use it, the equivalent hardcoded script is:
+
+```json
+{
+  "scripts": {
     "lint": "eslint --fix . && prettier --write ."
   }
 }
 ```
+
+Note that npm appends run-script arguments to the end of the command string, so with the hardcoded version `npm run lint src/` passes `src/` to Prettier only and still lints the entire project with ESLint. That is the reason the runner exists.
 
 ---
 

@@ -1,7 +1,11 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { readFileSync, writeFileSync, existsSync } from "fs";
+import { resolve } from "path";
 
-export const LINT_CMD = 'eslint --fix . && prettier --write .';
+export const LINT_CMD = "wlint";
+
+// Older versions hardcoded '.' as the target, so `npm run lint src/` silently
+// linted everything. Recognised here so setup can offer to upgrade them.
+export const LEGACY_LINT_CMDS = ["eslint --fix . && prettier --write .", "eslint --fix . && prettier --write . ", "npx eslint --fix . && npx prettier --write ."];
 
 export const ESLINT_CONFIG = `import wilsoonConfig from '@wilsoon/eslint-config/eslint';
 
@@ -14,28 +18,9 @@ export default [
 export const PRETTIER_CONFIG = `export { default } from '@wilsoon/eslint-config/prettier';
 `;
 
-export const ESLINT_CONFIG_FILES = [
-  'eslint.config.js',
-  'eslint.config.mjs',
-  'eslint.config.cjs',
-  'eslint.config.ts',
-  'eslint.config.mts',
-  'eslint.config.cts'
-];
+export const ESLINT_CONFIG_FILES = ["eslint.config.js", "eslint.config.mjs", "eslint.config.cjs", "eslint.config.ts", "eslint.config.mts", "eslint.config.cts"];
 
-export const PRETTIER_CONFIG_FILES = [
-  'prettier.config.js',
-  'prettier.config.mjs',
-  'prettier.config.cjs',
-  '.prettierrc',
-  '.prettierrc.json',
-  '.prettierrc.yml',
-  '.prettierrc.yaml',
-  '.prettierrc.js',
-  '.prettierrc.cjs',
-  '.prettierrc.mjs',
-  '.prettierrc.toml'
-];
+export const PRETTIER_CONFIG_FILES = ["prettier.config.js", "prettier.config.mjs", "prettier.config.cjs", ".prettierrc", ".prettierrc.json", ".prettierrc.yml", ".prettierrc.yaml", ".prettierrc.js", ".prettierrc.cjs", ".prettierrc.mjs", ".prettierrc.toml"];
 
 export function getProjectRoot() {
   return process.env.INIT_CWD || process.cwd();
@@ -46,11 +31,11 @@ export function log(icon, msg) {
 }
 
 export function readPkg(projectRoot) {
-  const path = resolve(projectRoot, 'package.json');
+  const path = resolve(projectRoot, "package.json");
   if (!existsSync(path)) return null;
 
   try {
-    const raw = readFileSync(path, 'utf-8');
+    const raw = readFileSync(path, "utf-8");
     return { path, raw, json: JSON.parse(raw) };
   } catch {
     return null;
@@ -58,14 +43,14 @@ export function readPkg(projectRoot) {
 }
 
 export function writePkg(pkg) {
-  const indent = pkg.raw.match(/^([ \t]+)"/m)?.[1] || '  ';
-  const json = JSON.stringify(pkg.json, null, indent) + '\n';
+  const indent = pkg.raw.match(/^([ \t]+)"/m)?.[1] || "  ";
+  const json = JSON.stringify(pkg.json, null, indent) + "\n";
 
-  writeFileSync(pkg.path, pkg.raw.includes('\r\n') ? json.replace(/\n/g, '\r\n') : json);
+  writeFileSync(pkg.path, pkg.raw.includes("\r\n") ? json.replace(/\n/g, "\r\n") : json);
 }
 
 export function isSelfInstall(projectRoot) {
-  return readPkg(projectRoot)?.json?.name === '@wilsoon/eslint-config';
+  return readPkg(projectRoot)?.json?.name === "@wilsoon/eslint-config";
 }
 
 function findConfig(projectRoot, candidates) {
@@ -78,14 +63,24 @@ export function inspectProject(projectRoot) {
   const eslintFile = findConfig(projectRoot, ESLINT_CONFIG_FILES);
   const prettierFile = findConfig(projectRoot, PRETTIER_CONFIG_FILES);
 
-  return { pkg, eslintFile, prettierFile, hasEslint: Boolean(eslintFile), hasPrettier: Boolean(prettierFile), lintScript, hasLintScript: Boolean(lintScript), lintScriptMatches: lintScript === LINT_CMD };
+  return {
+    pkg,
+    eslintFile,
+    prettierFile,
+    hasEslint: Boolean(eslintFile),
+    hasPrettier: Boolean(prettierFile),
+    lintScript,
+    hasLintScript: Boolean(lintScript),
+    lintScriptMatches: lintScript === LINT_CMD,
+    lintScriptIsLegacy: LEGACY_LINT_CMDS.includes(lintScript?.trim()),
+  };
 }
 
-export function writeEslintConfig(projectRoot, file = 'eslint.config.js') {
+export function writeEslintConfig(projectRoot, file = "eslint.config.js") {
   writeFileSync(resolve(projectRoot, file), ESLINT_CONFIG);
 }
 
-export function writePrettierConfig(projectRoot, file = 'prettier.config.js') {
+export function writePrettierConfig(projectRoot, file = "prettier.config.js") {
   writeFileSync(resolve(projectRoot, file), PRETTIER_CONFIG);
 }
 
