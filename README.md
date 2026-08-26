@@ -102,6 +102,12 @@ npm run lint -- src/
 
 > **Note:** ESLint runs first. If it reports a problem it can't autofix, the command stops there and Prettier does not run, so formatting is never applied on top of failing code. The exit code is the failing tool's, which keeps it usable in CI.
 
+`wlint` always prefers the ESLint and Prettier installed in **your** project, falling back to the copies bundled with this package only if you have neither. That matters when your project pins a different major than this package depends on: your config and plugins were installed against your version, and running the other one against them can fail inside ESLint itself. To see which ones are selected:
+
+```bash
+npx wlint --which
+```
+
 ---
 
 ## Rules Reference
