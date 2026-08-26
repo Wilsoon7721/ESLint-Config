@@ -6,15 +6,9 @@ import { spawnSync } from "child_process";
 import { createRequire } from "module";
 import { readFileSync } from "fs";
 import { dirname, relative, resolve } from "path";
+import { statSync } from "fs";
+import { EXTENSIONS } from "../eslint/files.js";
 
-// Two resolution roots, tried in this order:
-//   1. the consuming project, so we run the exact ESLint/Prettier it installed -
-//      the same ones node_modules/.bin/eslint would have run, and the ones its
-//      config and plugins were installed against;
-//   2. this package, as a fallback for projects that installed neither directly.
-// Preferring our bundled copy would run a second, different major of ESLint over
-// a config written for the project's, which fails deep inside ESLint (e.g. a
-// hoisted eslint-scope with no addGlobals).
 const ourRequire = createRequire(import.meta.url);
 const projectRequire = createRequire(resolve(process.cwd(), "package.json"));
 const argv = process.argv.slice(2);
@@ -41,6 +35,25 @@ if (argv.includes("-h") || argv.includes("--help")) {
 }
 
 const targets = argv.filter((a) => a !== "--which");
+const resolvedTargets = targets.length ? targets : ["."];
+
+function isDirectory(target) {
+  try {
+    return statSync(resolve(process.cwd(), target)).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function prettierTargets() {
+  return resolvedTargets.map((target) => {
+    if (!isDirectory(target)) return target;
+
+    const normalised = target.split("\\").join("/").replace(/\/+$/, "");
+    const prefix = target === "." ? "" : `${normalised}/`;
+    return `${prefix}**/*.{${EXTENSIONS.join(",")}}`;
+  });
+}
 
 function binOf(pkgName, binName) {
   let manifestPath;
@@ -68,7 +81,7 @@ function run(pkgName, binName, args) {
 
   if (error) throw error;
 
-  // Signals (e.g. Ctrl-C) report a null status.
+  // Ctrl + C report a null status
   return status === null ? 1 : status;
 }
 
@@ -82,10 +95,11 @@ try {
     process.exit(0);
   }
 
-  // Matches the old '&&' behaviour: if ESLint reports unfixable problems, stop
-  // there rather than reformatting on top of a failing lint.
-  const eslintStatus = run("eslint", "eslint", ["--fix", ...(targets.length ? targets : ["."])]);
-  process.exit(eslintStatus !== 0 ? eslintStatus : run("prettier", "prettier", ["--write", ...(targets.length ? targets : ["."])]));
+  const eslintStatus = run("eslint", "eslint", ["--fix", ...resolvedTargets]);
+
+  if (eslintStatus !== 0) process.exit(eslintStatus);
+
+  process.exit(run("prettier", "prettier", ["--write", "--no-error-on-unmatched-pattern", ...prettierTargets()]));
 } catch (err) {
   console.error(`\n  ⚠️  wlint could not run: ${err.message}\n`);
   process.exit(1);

@@ -92,8 +92,7 @@ async function main() {
 
   // ESLint config
   if (!state.hasEslint) {
-    writeEslintConfig(projectRoot);
-    log('✅', 'Created eslint.config.js');
+    log('✅', `Created ${writeEslintConfig(projectRoot)}`);
     log('  ', 'Take note: your own rule overrides in eslint.config.js will always take precedence.');
     madeChanges = true;
   } else if (alreadyOurs(state.eslintFile, ESLINT_CONFIG)) {
@@ -116,8 +115,7 @@ async function main() {
 
   // Prettier config
   if (!state.hasPrettier) {
-    writePrettierConfig(projectRoot);
-    log('✅', 'Created prettier.config.js');
+    log('✅', `Created ${writePrettierConfig(projectRoot)}`);
     madeChanges = true;
   } else if (alreadyOurs(state.prettierFile, PRETTIER_CONFIG)) {
     log('✅', `${state.prettierFile} is already using the @wilsoon config.`);

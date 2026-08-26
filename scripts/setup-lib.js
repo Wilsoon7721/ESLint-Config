@@ -2,11 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
 export const LINT_CMD = "wlint";
-
-// Older versions hardcoded '.' as the target, so `npm run lint src/` silently
-// linted everything. Recognised here so setup can offer to upgrade them.
 export const LEGACY_LINT_CMDS = ["eslint --fix . && prettier --write .", "eslint --fix . && prettier --write . ", "npx eslint --fix . && npx prettier --write ."];
-
 export const ESLINT_CONFIG = `import wilsoonConfig from '@wilsoon/eslint-config/eslint';
 
 export default [
@@ -76,12 +72,20 @@ export function inspectProject(projectRoot) {
   };
 }
 
-export function writeEslintConfig(projectRoot, file = "eslint.config.js") {
-  writeFileSync(resolve(projectRoot, file), ESLINT_CONFIG);
+function configExtension(projectRoot) {
+  return readPkg(projectRoot)?.json?.type === "module" ? "js" : "mjs";
 }
 
-export function writePrettierConfig(projectRoot, file = "prettier.config.js") {
-  writeFileSync(resolve(projectRoot, file), PRETTIER_CONFIG);
+export function writeEslintConfig(projectRoot, file = null) {
+  const name = file || `eslint.config.${configExtension(projectRoot)}`;
+  writeFileSync(resolve(projectRoot, name), ESLINT_CONFIG);
+  return name;
+}
+
+export function writePrettierConfig(projectRoot, file = null) {
+  const name = file || `prettier.config.${configExtension(projectRoot)}`;
+  writeFileSync(resolve(projectRoot, name), PRETTIER_CONFIG);
+  return name;
 }
 
 export function setLintScript(pkg) {

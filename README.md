@@ -44,8 +44,8 @@ It walks you through scaffolding the config files and the `lint` script, prompti
 
 This package also ships a postinstall script that covers the common case automatically. Because npm runs lifecycle scripts with their output hidden and no usable input, **the postinstall script never asks questions and never overwrites anything**. It only creates what is missing:
 
-1. Creates `eslint.config.js` - only if no ESLint config exists.
-2. Creates `prettier.config.js` - only if no Prettier config exists.
+1. Creates `eslint.config.mjs` - only if no ESLint config exists.
+2. Creates `prettier.config.mjs` - only if no Prettier config exists.
 3. Adds `"lint": "wlint"` - only if your `package.json` has no `lint` script.
 
 If all three are already present, it exits silently and does nothing. Anything that would require a decision - replacing an existing ESLint config, or a `lint` script that differs from the one above - is left to `npx @wilsoon/eslint-config`.
@@ -101,6 +101,14 @@ npm run lint -- src/
 ```
 
 > **Note:** ESLint runs first. If it reports a problem it can't autofix, the command stops there and Prettier does not run, so formatting is never applied on top of failing code. The exit code is the failing tool's, which keeps it usable in CI.
+
+Both tools use the same file mask - `**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}`, the one the ESLint config includes by default. That covers config files such as `next.config.mjs` and `postcss.config.mjs`, which are ordinary JavaScript and are linted and formatted like any other source file.
+
+A file you name explicitly is always formatted, regardless of its file type:
+
+```bash
+npm run lint tsconfig.json   # formats tsconfig.json, despite not being JS
+```
 
 `wlint` always prefers the ESLint and Prettier installed in **your** project, falling back to the copies bundled with this package only if you have neither. That matters when your project pins a different major than this package depends on: your config and plugins were installed against your version, and running the other one against them can fail inside ESLint itself. To see which ones are selected:
 
@@ -220,7 +228,7 @@ If you'd rather not run either the setup command or the postinstall script, set 
 
 ### 1. ESLint
 
-Create `eslint.config.js`:
+Create `eslint.config.mjs` (or `eslint.config.js` if your `package.json` sets `"type": "module"`):
 
 ```js
 import wilsoonConfig from "@wilsoon/eslint-config/eslint";
@@ -233,7 +241,7 @@ export default [
 
 ### 2. Prettier
 
-Create `prettier.config.js`:
+Create `prettier.config.mjs` (or `prettier.config.js` in an ESM project):
 
 ```js
 export { default } from "@wilsoon/eslint-config/prettier";
@@ -306,7 +314,7 @@ Your overrides always take precedence over the shared config.
 
 ## Applying to Specific Files Only
 
-The config already targets `**/*.{js,jsx,ts,tsx}` by default. To narrow or widen the scope:
+The config already targets `**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}` by default. To narrow or widen the scope:
 
 ```js
 import wilsoonConfig from "@wilsoon/eslint-config/eslint";
