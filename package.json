@@ -1,6 +1,6 @@
 {
   "name": "@wilsoon/eslint-config",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Opinionated ESLint + Prettier shared config with custom autofixable rules for cleaner JS/TS code.",
   "type": "module",
   "exports": {

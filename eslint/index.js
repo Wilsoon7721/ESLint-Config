@@ -14,6 +14,6 @@ export default tseslint.config({
     "local/short-if-body": "error",
     "local/concise-arrow-body": "error",
     "local/collapse-tagged-template": "error",
-    "@stylistic/padding-line-between-statements": ["error", { blankLine: "always", prev: "if", next: "*" }],
+    "@stylistic/padding-line-between-statements": ["error", { blankLine: "always", prev: "if", next: "*" }, { blankLine: "any", prev: "if", next: "if" }],
   },
 });
