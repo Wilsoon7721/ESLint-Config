@@ -124,9 +124,9 @@ npx wlint --which
 
 These are original rules written specifically for this config. They all provide **autofix**.
 
-#### `local/short-if-body` - Strip Braces From Single-Statement `if`
+#### `local/short-if-body` - Strip Braces From Single-Statement Blocks
 
-Removes curly braces from `if` blocks that contain exactly one statement.
+Removes curly braces from blocks that contain exactly one statement. Despite the name (kept so existing overrides and `eslint-disable` comments keep working) it covers `if`, `else`, `for`, `for...in`, `for...of`, `while` and `do...while`.
 
 - **Short bodies** (< 10 characters) stay on the same line as the condition.
 - **Longer bodies** move to the next line, indented.
@@ -138,11 +138,41 @@ Removes curly braces from `if` blocks that contain exactly one statement.
 - }
 + if (x) return;
 
-- if (condition) {
--   doSomethingLonger();
+- for (const item of items) {
+-   consume(item);
 - }
-+ if (condition)
-+   doSomethingLonger();
++ for (const item of items)
++   consume(item);
+
+- if (x) {
+-   doTheFirstThing();
+- } else {
+-   doTheSecondThing();
+- }
++ if (x)
++   doTheFirstThing();
++ else
++   doTheSecondThing();
+```
+
+**Exceptions.** The braces are left alone when the single statement is itself a block-owning statement - `if`, `else`, `for`, `for...in`, `for...of`, `while`, `do...while`, `switch` or `try`:
+
+```js
+// Left as-is: inlining this would rebind the `else` to the inner `if`.
+if (x) {
+  if (y) first();
+} else {
+  second();
+}
+```
+
+They are also left alone where an unbraced body would not be valid JavaScript - a `let`/`const` declaration, a function declaration, or a class declaration. (`var` is still collapsed, since it is legal there.)
+
+```js
+// Left as-is: `if (x) const only = 1;` is a SyntaxError.
+if (x) {
+  const only = 1;
+}
 ```
 
 #### `local/concise-arrow-body` - Concise Arrow Function Bodies

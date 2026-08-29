@@ -1,33 +1,74 @@
 const SHORT_THRESHOLD = 10;
 
 export const rules = {
+  // Historically only handled `if`; the name is kept so existing overrides and
+  // disable comments keep working.
   "short-if-body": {
     meta: { type: "layout", fixable: "code", schema: [] },
     create(context) {
       const sourceCode = context.sourceCode;
+
+      // Statements that own a block of their own. Inlining one of these leaves
+      // `if (a) if (b) foo();`, and where the outer statement has an `else` it
+      // silently rebinds that `else` to the inner `if`.
+      const NESTED_BLOCK = new Set(["IfStatement", "ForStatement", "ForInStatement", "ForOfStatement", "WhileStatement", "DoWhileStatement", "SwitchStatement", "TryStatement"]);
+
+      // Indentation comes from the line the clause starts on, not the column of a
+      // token: in `} else if (b) {` the inner `if` sits at column 9, and using
+      // that would indent its body to match.
+      const lineIndent = (nodeOrToken) => (sourceCode.lines[nodeOrToken.loc.start.line - 1] ?? "").match(/^[ 	]*/)[0];
+
+      // `if (a) const x = 1;` is a SyntaxError - lexical declarations, classes
+      // and function declarations all require a block.
+      const needsBlock = (stmt) => stmt.type === "FunctionDeclaration" || stmt.type === "ClassDeclaration" || (stmt.type === "VariableDeclaration" && stmt.kind !== "var");
+
+      // When a collapsed consequent is followed by `else`, the replacement has to
+      // reach up to that keyword: the range otherwise stops at the closing brace
+      // and leaves `doThing(); else` stranded on one line.
+      function check(block, label, anchor, elseToken = null) {
+        if (!block || block.type !== "BlockStatement") return;
+        if (block.body.length !== 1) return;
+
+        const stmt = block.body[0];
+        if (NESTED_BLOCK.has(stmt.type)) return;
+        if (needsBlock(stmt)) return;
+
+        const stmtText = sourceCode.getText(stmt);
+        const hadComments = sourceCode.getCommentsInside(block).length > 0;
+        const isShort = stmtText.length < SHORT_THRESHOLD;
+        const baseIndent = lineIndent(anchor);
+        const replacement = isShort ? ` ${stmtText}` : `
+${baseIndent}  ${stmtText}`;
+
+        // Everything from the token before the block (`)`, `else`, `do`) to the
+        // closing brace is replaced, so extra spacing does not shift the range.
+        const before = sourceCode.getTokenBefore(block, { includeComments: true });
+        const end = elseToken ? elseToken.range[0] : block.range[1];
+        const separator = elseToken ? (isShort ? " " : `
+${baseIndent}`) : "";
+
+        context.report({
+          node: block,
+          message: hadComments ? `Single-statement ${label}: drop braces, drop the blocking comment(s).` : `Single-statement ${label}: drop braces.`,
+          fix: (fixer) => fixer.replaceTextRange([before.range[1], end], replacement + separator)
+        });
+      }
+
       return {
         IfStatement(node) {
-          const block = node.consequent;
-          if (block.type !== "BlockStatement") return;
-          if (block.body.length !== 1) return;
+          check(node.consequent, "if", node, node.alternate ? sourceCode.getTokenAfter(node.consequent) : null);
 
-          const stmt = block.body[0];
-          const stmtText = sourceCode.getText(stmt);
-          const hadComments = sourceCode.getCommentsInside(block).length > 0;
-          const isShort = stmtText.length < SHORT_THRESHOLD;
-          const baseIndent = " ".repeat(node.loc.start.column);
-          const replacement = isShort ? ` ${stmtText}` : `\n${baseIndent}  ${stmtText}`;
-          context.report({
-            node: block,
-            message: hadComments ? "Single-statement if: drop braces, drop the blocking comment(s)." : "Single-statement if: drop braces.",
-            fix(fixer) {
-              const testEnd = node.test.range[1] + 1;
-              return fixer.replaceTextRange([testEnd, block.range[1]], replacement);
-            },
-          });
+          // `else if` parses as an IfStatement alternate, not a block, so it is
+          // skipped here and handled when that inner statement is visited.
+          if (node.alternate?.type === "BlockStatement") check(node.alternate, "else", node);
         },
+        ForStatement: (node) => check(node.body, "for", node),
+        ForInStatement: (node) => check(node.body, "for-in", node),
+        ForOfStatement: (node) => check(node.body, "for-of", node),
+        WhileStatement: (node) => check(node.body, "while", node),
+        DoWhileStatement: (node) => check(node.body, "do-while", node)
       };
-    },
+    }
   },
 
   "concise-arrow-body": {
