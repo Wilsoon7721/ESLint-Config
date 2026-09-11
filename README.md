@@ -274,6 +274,8 @@ The bundled dprint config applies these settings:
 | `useTabs`                            | `false`          | Spaces, not tabs                                                                                   |
 | `arrowFunction.useParentheses`       | `"force"`        | Always wrap arrow function params in parentheses                                                   |
 | `memberExpression.linePerExpression` | `false`          | Method chains stay on one line when they fit within `lineWidth`                                    |
+| `useBraces`                          | `"preferNone"`   | Always remove braces from single statements (this is the default in dprint)                        |
+| `singleBodyPosition`                 | `"maintain"`     | Keeps single-statement body on the same line or next line as formatted by ESLint                   |
 
 > **Note:** On first run, dprint downloads the TypeScript/JavaScript formatting plugin (~3 MB WASM file). This is cached globally and only happens once.
 
@@ -312,7 +314,9 @@ Create `dprint.json` in your project root:
     "trailingCommas": "never",
     "arrowFunction.useParentheses": "force",
     "jsx.bracketPosition": "sameLine",
-    "memberExpression.linePerExpression": false
+    "memberExpression.linePerExpression": false,
+    "useBraces": "maintain",
+    "singleBodyPosition": "maintain"
   },
   "plugins": ["https://plugins.dprint.dev/typescript-0.96.1.wasm"]
 }

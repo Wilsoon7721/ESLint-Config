@@ -1,6 +1,6 @@
 {
   "name": "@wilsoon/eslint-config",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Opinionated ESLint + dprint shared config with custom autofixable rules for cleaner JS/TS code.",
   "type": "module",
   "exports": {

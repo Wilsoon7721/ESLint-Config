@@ -9,10 +9,12 @@ export default {
   lineWidth: 250,
   indentWidth: 2,
   useTabs: false,
-  quoteStyle: "preferSingle",
-  semiColons: "always",
-  trailingCommas: "never",
-  "arrowFunction.useParentheses": "force",
-  "jsx.bracketPosition": "sameLine",
-  "memberExpression.linePerExpression": false,
+  quoteStyle: 'preferSingle',
+  semiColons: 'always',
+  trailingCommas: 'never',
+  'arrowFunction.useParentheses': 'force',
+  'jsx.bracketPosition': 'sameLine',
+  'memberExpression.linePerExpression': false,
+  useBraces: 'preferNone',
+  singleBodyPosition: 'maintain'
 };

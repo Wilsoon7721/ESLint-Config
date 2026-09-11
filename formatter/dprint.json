@@ -9,7 +9,9 @@
     "trailingCommas": "never",
     "arrowFunction.useParentheses": "force",
     "jsx.bracketPosition": "sameLine",
-    "memberExpression.linePerExpression": false
+    "memberExpression.linePerExpression": false,
+    "useBraces": "preferNone",
+    "singleBodyPosition": "maintain"
   },
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.96.1.wasm"
