@@ -1,0 +1,42 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run every check and pack the tarball, but publish nothing"
+        type: boolean
+        default: true
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Use an npm that can trust-publish
+        run: npm install -g npm@^11
+
+      - run: npm ci --ignore-scripts
+
+      - name: Show what would be published
+        run: npm publish --dry-run --provenance --access public
+
+      - name: Publish
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --provenance --access public

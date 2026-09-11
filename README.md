@@ -1,6 +1,6 @@
 # @wilsoon/eslint-config
 
-Opinionated, autofixable ESLint + Prettier shared configuration for JavaScript and TypeScript projects. Install once, run `npm run lint`, and let the tools clean up your code.
+Opinionated, autofixable ESLint + dprint shared configuration for JavaScript and TypeScript projects. Install once, run `npm run lint`, and let the tools clean up your code.
 
 ---
 
@@ -10,15 +10,14 @@ Opinionated, autofixable ESLint + Prettier shared configuration for JavaScript a
 npm install --save-dev @wilsoon/eslint-config
 ```
 
-This single install pulls in everything you need: ESLint, Prettier, the TypeScript parser, and the stylistic plugin.
+This single install pulls in everything you need: ESLint, dprint, the TypeScript parser, and the stylistic plugin.
 
-> **Note:** These tools are bundled as regular dependencies so you don't have to install them separately. If your project already uses a different major version of ESLint or Prettier, npm may install a second copy nested inside this package rather than warning about a conflict. If you'd prefer explicit control over tool versions, install them yourself and add the following to your `package.json` instead:
+> **Note:** These tools are bundled as regular dependencies so you don't have to install them separately. If your project already uses a different major version of ESLint, npm may install a second copy nested inside this package rather than warning about a conflict. If you'd prefer explicit control over tool versions, install them yourself and add the following to your `package.json` instead:
 >
 > ```json
 > "overrides": {
 >   "@wilsoon/eslint-config": {
->     "eslint": "$eslint",
->     "prettier": "$prettier"
+>     "eslint": "$eslint"
 >   }
 > }
 > ```
@@ -40,12 +39,21 @@ It walks you through scaffolding the config files and the `lint` script, prompti
 | `-y`, `--yes`  | Accept every prompt (replaces conflicting configs without asking) |
 | `-h`, `--help` | Show usage                                                        |
 
+#### Migrating from v0.3.x (Prettier)
+
+v0.4.0 replaces Prettier with **dprint** as the formatter. When you run the setup command, it will:
+
+1. Create `dprint.json` with the equivalent formatting rules.
+2. Detect any existing Prettier config and suggest you remove it.
+
+You can safely delete your old `prettier.config.mjs` / `.prettierrc` after setup.
+
 ### The Postinstall Script
 
 This package also ships a postinstall script that covers the common case automatically. Because npm runs lifecycle scripts with their output hidden and no usable input, **the postinstall script never asks questions and never overwrites anything**. It only creates what is missing:
 
 1. Creates `eslint.config.mjs` - only if no ESLint config exists.
-2. Creates `prettier.config.mjs` - only if no Prettier config exists.
+2. Creates `dprint.json` - only if no dprint config exists.
 3. Adds `"lint": "wlint"` - only if your `package.json` has no `lint` script.
 
 If all three are already present, it exits silently and does nothing. Anything that would require a decision - replacing an existing ESLint config, or a `lint` script that differs from the one above - is left to `npx @wilsoon/eslint-config`.
@@ -74,7 +82,7 @@ You never have to approve it - running `npx @wilsoon/eslint-config` once does ev
 
 ## What This Package Does
 
-This package bundles **three custom ESLint rules**, a curated set of **stylistic ESLint rules**, and a **Prettier configuration** into a single installable dependency. Everything is autofixable - run one command and your code is reformatted.
+This package bundles **three custom ESLint rules**, a curated set of **stylistic ESLint rules**, and a **dprint configuration** into a single installable dependency. Everything is autofixable - run one command and your code is reformatted.
 
 After setup, the only command you need day to day is:
 
@@ -84,7 +92,7 @@ npm run lint
 
 ### Linting Specific Files
 
-`npm run lint` with no arguments fixes and formats the whole project. Pass files or directories to narrow it down - they are handed to both ESLint and Prettier:
+`npm run lint` with no arguments fixes and formats the whole project. Pass files or directories to narrow it down - they are handed to both ESLint and dprint:
 
 ```bash
 npm run lint src/
@@ -100,20 +108,35 @@ Older npm versions require `--` before the arguments, which is always safe to in
 npm run lint -- src/
 ```
 
-> **Note:** ESLint runs first. If it reports a problem it can't autofix, the command stops there and Prettier does not run, so formatting is never applied on top of failing code. The exit code is the failing tool's, which keeps it usable in CI.
+> **Note:** ESLint runs first. If it reports a problem it can't autofix, the command stops there and dprint does not run, so formatting is never applied on top of failing code. The exit code is the failing tool's, which keeps it usable in CI.
 
-Both tools use the same file mask - `**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}`, the one the ESLint config includes by default. That covers config files such as `next.config.mjs` and `postcss.config.mjs`, which are ordinary JavaScript and are linted and formatted like any other source file.
-
-A file you name explicitly is always formatted, regardless of its file type:
-
-```bash
-npm run lint tsconfig.json   # formats tsconfig.json, despite not being JS
-```
-
-`wlint` always prefers the ESLint and Prettier installed in **your** project, falling back to the copies bundled with this package only if you have neither. That matters when your project pins a different major than this package depends on: your config and plugins were installed against your version, and running the other one against them can fail inside ESLint itself. To see which ones are selected:
+`wlint` always prefers the ESLint and dprint installed in **your** project, falling back to the copies bundled with this package only if you have neither. To see which ones are selected:
 
 ```bash
 npx wlint --which
+```
+
+### Check Mode
+
+Use `--check` to validate code without modifying any files:
+
+```bash
+npm run lint -- --check
+```
+
+In check mode:
+
+- ESLint runs **without** `--fix` - it reports issues but doesn't touch files.
+- dprint runs `check` instead of `fmt` - it reports files that would change.
+- **Both tools always run**, regardless of ESLint's exit status.
+- **The exit code is always 0** - check mode is purely informational.
+
+This is ideal for CI pipelines where you want to surface issues without blocking:
+
+```yaml
+# GitHub Actions example
+- run: npm run lint -- --check
+  continue-on-error: true
 ```
 
 ---
@@ -201,7 +224,7 @@ Only fires when the result fits on one line. Multi-line bodies are left alone.
 #### `local/collapse-tagged-template` - Collapse Short Tagged Templates
 
 Collapses multi-line tagged template literals (e.g. `` sql`...` ``) onto one line when they're short enough.
-As Prettier never touches template literal contents, this rule fills that gap.
+As formatters never touch template literal contents, this rule fills that gap.
 
 **Defaults** (configurable):
 
@@ -236,19 +259,23 @@ A blank line is enforced after every `if` / `else if` / `else` block, separating
 
 ---
 
-### Prettier Formatting
+### dprint Formatting
 
-The bundled Prettier config applies these settings:
+The bundled dprint config applies these settings:
 
-| Setting           | Value      | Why                                                                                                |
-| ----------------- | ---------- | -------------------------------------------------------------------------------------------------- |
-| `printWidth`      | `250`      | Keeps most code on one line - the custom ESLint rule handles tagged template collapsing separately |
-| `trailingComma`   | `"none"`   | No trailing commas anywhere                                                                        |
-| `bracketSameLine` | `true`     | Opening braces stay on the same line                                                               |
-| `singleQuote`     | `true`     | Single quotes for strings                                                                          |
-| `semi`            | `true`     | Semicolons at end of statements                                                                    |
-| `tabWidth`        | `2`        | 2-space indentation                                                                                |
-| `arrowParens`     | `"always"` | Always wrap arrow function params in parentheses                                                   |
+| Setting                              | Value            | Why                                                                                                |
+| ------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------- |
+| `lineWidth`                          | `250`            | Keeps most code on one line - the custom ESLint rule handles tagged template collapsing separately |
+| `trailingCommas`                     | `"never"`        | No trailing commas anywhere                                                                        |
+| `jsx.bracketPosition`                | `"sameLine"`     | Opening braces stay on the same line                                                               |
+| `quoteStyle`                         | `"preferSingle"` | Single quotes for strings                                                                          |
+| `semiColons`                         | `"always"`       | Semicolons at end of statements                                                                    |
+| `indentWidth`                        | `2`              | 2-space indentation                                                                                |
+| `useTabs`                            | `false`          | Spaces, not tabs                                                                                   |
+| `arrowFunction.useParentheses`       | `"force"`        | Always wrap arrow function params in parentheses                                                   |
+| `memberExpression.linePerExpression` | `false`          | Method chains stay on one line when they fit within `lineWidth`                                    |
+
+> **Note:** On first run, dprint downloads the TypeScript/JavaScript formatting plugin (~3 MB WASM file). This is cached globally and only happens once.
 
 ---
 
@@ -269,23 +296,35 @@ export default [
 ];
 ```
 
-### 2. Prettier
+### 2. dprint
 
-Create `prettier.config.mjs` (or `prettier.config.js` in an ESM project):
+Create `dprint.json` in your project root:
 
-```js
-export { default } from "@wilsoon/eslint-config/prettier";
+```json
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "lineWidth": 250,
+  "indentWidth": 2,
+  "useTabs": false,
+  "typescript": {
+    "quoteStyle": "preferSingle",
+    "semiColons": "always",
+    "trailingCommas": "never",
+    "arrowFunction.useParentheses": "force",
+    "jsx.bracketPosition": "sameLine",
+    "memberExpression.linePerExpression": false
+  },
+  "plugins": ["https://plugins.dprint.dev/typescript-0.96.1.wasm"]
+}
 ```
 
-Or to extend/override specific settings:
+To override specific settings, edit the values directly in your `dprint.json`.
+
+The formatting rules are also available as a JS object for programmatic access:
 
 ```js
-import base from "@wilsoon/eslint-config/prettier";
-
-export default {
-  ...base,
-  semi: false, // Example override: no semicolons
-};
+import formatterConfig from "@wilsoon/eslint-config/formatter";
+console.log(formatterConfig.lineWidth); // 250
 ```
 
 ### 3. Lint Script
@@ -300,17 +339,7 @@ Add to your `package.json`:
 }
 ```
 
-`wlint` is the small runner shipped with this package. It forwards any files or directories you pass to both ESLint and Prettier, defaulting to the whole project. If you would rather not use it, the equivalent hardcoded script is:
-
-```json
-{
-  "scripts": {
-    "lint": "eslint --fix . && prettier --write ."
-  }
-}
-```
-
-Note that npm appends run-script arguments to the end of the command string, so with the hardcoded version `npm run lint src/` passes `src/` to Prettier only and still lints the entire project with ESLint. That is the reason the runner exists.
+`wlint` is the small runner shipped with this package. It forwards any files or directories you pass to both ESLint and dprint, defaulting to the whole project.
 
 ---
 

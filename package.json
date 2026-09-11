@@ -1,11 +1,11 @@
 {
   "name": "@wilsoon/eslint-config",
-  "version": "0.3.4",
-  "description": "Opinionated ESLint + Prettier shared config with custom autofixable rules for cleaner JS/TS code.",
+  "version": "0.4.0",
+  "description": "Opinionated ESLint + dprint shared config with custom autofixable rules for cleaner JS/TS code.",
   "type": "module",
   "exports": {
     "./eslint": "./eslint/index.js",
-    "./prettier": "./prettier/index.js"
+    "./formatter": "./formatter/index.js"
   },
   "scripts": {
     "postinstall": "node ./scripts/postinstall.js"
@@ -13,15 +13,15 @@
   "files": [
     "bin/",
     "eslint/",
-    "prettier/",
+    "formatter/",
     "scripts/",
     "README.md"
   ],
   "keywords": [
     "eslint",
     "eslint-config",
-    "prettier",
-    "prettier-config",
+    "dprint",
+    "formatter",
     "linting",
     "formatting",
     "typescript",
@@ -43,7 +43,7 @@
     "eslint": "^10.0.0",
     "typescript-eslint": "^8.0.0",
     "@stylistic/eslint-plugin": "^3.0.0",
-    "prettier": "^3.0.0"
+    "dprint": "^0.57.0"
   },
   "bin": {
     "eslint-config": "./bin/cli.js",

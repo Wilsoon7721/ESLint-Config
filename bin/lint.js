@@ -4,11 +4,11 @@
 
 import { spawnSync } from "child_process";
 import { createRequire } from "module";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { dirname, relative, resolve } from "path";
-import { statSync } from "fs";
-import { EXTENSIONS } from "../eslint/files.js";
+import { fileURLToPath } from "url";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const ourRequire = createRequire(import.meta.url);
 const projectRequire = createRequire(resolve(process.cwd(), "package.json"));
 const argv = process.argv.slice(2);
@@ -19,7 +19,7 @@ if (argv.includes("-h") || argv.includes("--help")) {
 
   Usage: npm run lint [--] [targets...]
 
-  Runs 'eslint --fix' and then 'prettier --write' over the given files or
+  Runs 'eslint --fix' and then 'dprint fmt' over the given files or
   directories. With no targets, both run over the whole project ('.').
 
   Examples:
@@ -28,32 +28,17 @@ if (argv.includes("-h") || argv.includes("--help")) {
     npm run lint src/app.ts utils/   # several targets
 
   Options:
-    --which      Print which ESLint and Prettier would run, then exit
+    --check      Check for issues without modifying files (CI mode)
+    --which      Print which ESLint and dprint would run, then exit
     -h, --help   Show this message
 `);
   process.exit(0);
 }
 
-const targets = argv.filter((a) => a !== "--which");
+const CONTROL_FLAGS = new Set(["--which", "--check"]);
+const checkMode = argv.includes("--check");
+const targets = argv.filter((a) => !CONTROL_FLAGS.has(a));
 const resolvedTargets = targets.length ? targets : ["."];
-
-function isDirectory(target) {
-  try {
-    return statSync(resolve(process.cwd(), target)).isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-function prettierTargets() {
-  return resolvedTargets.map((target) => {
-    if (!isDirectory(target)) return target;
-
-    const normalised = target.split("\\").join("/").replace(/\/+$/, "");
-    const prefix = target === "." ? "" : `${normalised}/`;
-    return `${prefix}**/*.{${EXTENSIONS.join(",")}}`;
-  });
-}
 
 function binOf(pkgName, binName) {
   let manifestPath;
@@ -85,21 +70,49 @@ function run(pkgName, binName, args) {
   return status === null ? 1 : status;
 }
 
+/**
+ * Resolve the dprint config to use.
+ *
+ * 1. If the project has its own dprint.json / .dprint.json, let dprint auto-discover it (return no extra args).
+ * 2. Otherwise fall back to the config shipped with this package.
+ */
+function dprintConfigArgs() {
+  const cwd = process.cwd();
+  const candidates = ["dprint.json", ".dprint.json", "dprint.jsonc", ".dprint.jsonc"];
+
+  if (candidates.some((f) => existsSync(resolve(cwd, f)))) return [];
+
+  return ["--config", resolve(__dirname, "..", "formatter", "dprint.json")];
+}
+
 try {
   if (argv.includes("--which")) {
-    for (const name of ["eslint", "prettier"]) {
-      const { version, dir } = binOf(name, name);
+    for (const [pkg, name] of [
+      ["eslint", "eslint"],
+      ["dprint", "dprint"],
+    ]) {
+      const { version, dir } = binOf(pkg, name);
       console.log(`  ${name} v${version}  ${relative(process.cwd(), dir) || dir}`);
     }
 
     process.exit(0);
   }
 
+  const configArgs = dprintConfigArgs();
+
+  if (checkMode) {
+    // --check: run both tools without modifying files, always exit 0
+    run("eslint", "eslint", [...resolvedTargets]);
+    run("dprint", "dprint", ["check", ...configArgs, ...resolvedTargets]);
+    process.exit(0);
+  }
+
+  // Default: fix mode
   const eslintStatus = run("eslint", "eslint", ["--fix", ...resolvedTargets]);
 
   if (eslintStatus !== 0) process.exit(eslintStatus);
 
-  process.exit(run("prettier", "prettier", ["--write", "--no-error-on-unmatched-pattern", ...prettierTargets()]));
+  process.exit(run("dprint", "dprint", ["fmt", ...configArgs, ...resolvedTargets]));
 } catch (err) {
   console.error(`\n  ⚠️  wlint could not run: ${err.message}\n`);
   process.exit(1);

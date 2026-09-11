@@ -1,34 +1,15 @@
 #!/usr/bin/env node
-
-/**
- * Interactive setup: `npx @wilsoon/eslint-config`.
- *
- * The postinstall script only ever creates missing files, because npm lifecycle
- * scripts run without a usable stdin. Everything that needs a decision - and
- * every change that would overwrite something - lives here instead.
- */
-
-import { createInterface } from 'readline';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import {
-  ESLINT_CONFIG,
-  PRETTIER_CONFIG,
-  LINT_CMD,
-  getProjectRoot,
-  inspectProject,
-  log,
-  setLintScript,
-  writeEslintConfig,
-  writePrettierConfig
-} from '../scripts/setup-lib.js';
+import { createInterface } from "readline";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import { ESLINT_CONFIG, LINT_CMD, getProjectRoot, getDprintConfig, inspectProject, log, setLintScript, writeEslintConfig, writeDprintConfig } from "../scripts/setup-lib.js";
 
 const projectRoot = getProjectRoot();
 const argv = process.argv.slice(2);
-const assumeYes = argv.includes('-y') || argv.includes('--yes');
+const assumeYes = argv.includes("-y") || argv.includes("--yes");
 const interactive = process.stdin.isTTY && process.stdout.isTTY;
 
-if (argv.includes('-h') || argv.includes('--help')) {
+if (argv.includes("-h") || argv.includes("--help")) {
   console.log(`
   @wilsoon/eslint-config - project setup
 
@@ -41,12 +22,9 @@ if (argv.includes('-h') || argv.includes('--help')) {
   process.exit(0);
 }
 
-/** JS-style config files we can safely rewrite with an ESM template. */
-const REWRITABLE = /\.(js|mjs|cjs|ts|mts|cts)$/;
-
 function ask(question, defaultYes = false) {
-  if (assumeYes) return Promise.resolve('y');
-  if (!interactive) return Promise.resolve(defaultYes ? 'y' : 'n');
+  if (assumeYes) return Promise.resolve("y");
+  if (!interactive) return Promise.resolve(defaultYes ? "y" : "n");
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
   return new Promise((res) => {
@@ -57,12 +35,12 @@ function ask(question, defaultYes = false) {
   });
 }
 
-const yes = (answer, defaultYes = false) => (answer === '' ? defaultYes : answer === 'y' || answer === 'yes');
+const yes = (answer, defaultYes = false) => (answer === "" ? defaultYes : answer === "y" || answer === "yes");
 
 /** True when `file` already holds exactly the template we would write. */
 function alreadyOurs(file, template) {
   try {
-    return readFileSync(resolve(projectRoot, file), 'utf-8') === template;
+    return readFileSync(resolve(projectRoot, file), "utf-8") === template;
   } catch {
     return false;
   }
@@ -72,19 +50,19 @@ async function main() {
   const state = inspectProject(projectRoot);
 
   console.log();
-  console.log('  ┌──────────────────────────────────────────────────────┐');
-  console.log('  │  📦 @wilsoon/eslint-config - Project Setup           │');
-  console.log('  └──────────────────────────────────────────────────────┘');
+  console.log("  ┌──────────────────────────────────────────────────────┐");
+  console.log("  │  📦 @wilsoon/eslint-config - Project Setup           │");
+  console.log("  └──────────────────────────────────────────────────────┘");
   console.log();
-  console.log('  This package bundles custom ESLint rules and a Prettier');
-  console.log('  config that auto-fix your code style. It sets up your');
-  console.log('  project so you can directly run \'npm run lint\' to apply');
-  console.log('  the rules.');
+  console.log("  This package bundles custom ESLint rules and a dprint");
+  console.log("  formatter config that auto-fix your code style. It sets");
+  console.log("  up your project so you can directly run 'npm run lint'");
+  console.log("  to apply the rules.");
   console.log();
 
   if (!interactive && !assumeYes) {
-    log('⚠️', 'Not running in a terminal - prompts will be answered with "no".');
-    log('  ', 'Pass --yes to accept every prompt instead.');
+    log("⚠️", 'Not running in a terminal - prompts will be answered with "no".');
+    log("  ", "Pass --yes to accept every prompt instead.");
     console.log();
   }
 
@@ -92,93 +70,103 @@ async function main() {
 
   // ESLint config
   if (!state.hasEslint) {
-    log('✅', `Created ${writeEslintConfig(projectRoot)}`);
-    log('  ', 'Take note: your own rule overrides in eslint.config.js will always take precedence.');
+    log("✅", `Created ${writeEslintConfig(projectRoot)}`);
+    log("  ", "Take note: your own rule overrides in eslint.config.js will always take precedence.");
     madeChanges = true;
   } else if (alreadyOurs(state.eslintFile, ESLINT_CONFIG)) {
-    log('✅', `${state.eslintFile} is already using the @wilsoon config.`);
-  } else if (REWRITABLE.test(state.eslintFile)) {
-    log('⚠️', `${state.eslintFile} already exists.`);
+    log("✅", `${state.eslintFile} is already using the @wilsoon config.`);
+  } else {
+    log("⚠️", `${state.eslintFile} already exists.`);
     if (yes(await ask(`Replace it with the @wilsoon config? (y/N) `))) {
       writeEslintConfig(projectRoot, state.eslintFile);
-      log('✅', `Replaced ${state.eslintFile}`);
-      log('  ', 'Take note: your own rule overrides will always take precedence.');
+      log("✅", `Replaced ${state.eslintFile}`);
+      log("  ", "Take note: your own rule overrides will always take precedence.");
       madeChanges = true;
     } else {
-      log('⏭️', `Keeping your existing ${state.eslintFile}.`);
-      log('  ', 'To use this config, spread it in: import wilsoonConfig from \'@wilsoon/eslint-config/eslint\';');
+      log("⏭️", `Keeping your existing ${state.eslintFile}.`);
+      log("  ", "To use this config, spread it in: import wilsoonConfig from '@wilsoon/eslint-config/eslint';");
     }
-  } else {
-    log('⏭️', `${state.eslintFile} already exists - leaving it alone.`);
   }
   console.log();
 
-  // Prettier config
-  if (!state.hasPrettier) {
-    log('✅', `Created ${writePrettierConfig(projectRoot)}`);
+  // dprint config
+  const dprintTemplate = getDprintConfig();
+
+  if (!state.hasDprint) {
+    if (state.hasLegacyPrettier) {
+      log("⚠️", `Found legacy Prettier config: ${state.legacyPrettierFile}`);
+      log("  ", "This version uses dprint instead of Prettier.");
+      log("  ", `You can safely remove ${state.legacyPrettierFile} after setup.`);
+      console.log();
+    }
+
+    log("✅", `Created ${writeDprintConfig(projectRoot)}`);
     madeChanges = true;
-  } else if (alreadyOurs(state.prettierFile, PRETTIER_CONFIG)) {
-    log('✅', `${state.prettierFile} is already using the @wilsoon config.`);
-  } else if (REWRITABLE.test(state.prettierFile)) {
-    log('⚠️', `${state.prettierFile} already exists.`);
+  } else if (alreadyOurs(state.dprintFile, dprintTemplate)) {
+    log("✅", `${state.dprintFile} is already using the @wilsoon config.`);
+  } else {
+    log("⚠️", `${state.dprintFile} already exists.`);
     if (yes(await ask(`Replace it with the @wilsoon config? (y/N) `))) {
-      writePrettierConfig(projectRoot, state.prettierFile);
-      log('✅', `Replaced ${state.prettierFile}`);
+      writeDprintConfig(projectRoot, state.dprintFile);
+      log("✅", `Replaced ${state.dprintFile}`);
       madeChanges = true;
     } else {
-      log('⏭️', `Keeping your existing ${state.prettierFile}.`);
+      log("⏭️", `Keeping your existing ${state.dprintFile}.`);
     }
-  } else {
-    log('⏭️', `${state.prettierFile} already exists - leaving it alone.`);
-    log('  ', 'Delete it and re-run this command to use the @wilsoon Prettier config.');
   }
   console.log();
+
+  // Legacy Prettier cleanup hint
+  if (state.hasLegacyPrettier && state.hasDprint) {
+    log("💡", `Legacy Prettier config detected: ${state.legacyPrettierFile}`);
+    log("  ", "This version uses dprint. You can safely delete the Prettier config.");
+    console.log();
+  }
 
   // package.json lint script
   if (!state.pkg) {
-    log('⏭️', 'No package.json found - skipping the "lint" script.');
+    log("⏭️", 'No package.json found - skipping the "lint" script.');
     console.log();
   } else if (!state.hasLintScript) {
     setLintScript(state.pkg);
-    log('✅', `Added "lint" script to package.json: '${LINT_CMD}'`);
+    log("✅", `Added "lint" script to package.json: '${LINT_CMD}'`);
     madeChanges = true;
     console.log();
   } else if (state.lintScriptIsLegacy) {
-    log('⚠️', `Your lint script is from an older version: '${state.lintScript}'`);
-    log('  ', `It hardcodes '.', so 'npm run lint src/' lints the whole project anyway.`);
-    log('  ', `The current script is:  '${LINT_CMD}'`);
-    if (yes(await ask('Update it? (Y/n) ', true), true)) {
+    log("⚠️", `Your lint script is from an older version: '${state.lintScript}'`);
+    log("  ", `It hardcodes '.', so 'npm run lint src/' lints the whole project anyway.`);
+    log("  ", `The current script is:  '${LINT_CMD}'`);
+    if (yes(await ask("Update it? (Y/n) ", true), true)) {
       setLintScript(state.pkg);
-      log('✅', 'Updated lint script in package.json');
+      log("✅", "Updated lint script in package.json");
       madeChanges = true;
     } else {
-      log('⏭️', 'Keeping existing lint script.');
+      log("⏭️", "Keeping existing lint script.");
     }
     console.log();
   } else if (!state.lintScriptMatches) {
-    log('⚠️', `Existing lint script: '${state.lintScript}'`);
-    log('  ', `This package needs:   '${LINT_CMD}'`);
-    if (yes(await ask('Replace it? (y/N) '))) {
+    log("⚠️", `Existing lint script: '${state.lintScript}'`);
+    log("  ", `This package needs:   '${LINT_CMD}'`);
+    if (yes(await ask("Replace it? (y/N) "))) {
       setLintScript(state.pkg);
-      log('✅', 'Updated lint script in package.json');
+      log("✅", "Updated lint script in package.json");
       madeChanges = true;
     } else {
-      log('⏭️', 'Keeping existing lint script.');
-      log('  ', 'You can still run \'npx eslint --fix . && npx prettier --write .\' to apply the rules.');
+      log("⏭️", "Keeping existing lint script.");
     }
     console.log();
   }
 
   if (madeChanges) {
-    console.log('  🎉 All set! Run \x1b[1mnpm run lint\x1b[0m to lint and format your project.');
+    console.log("  🎉 All set! Run \x1b[1mnpm run lint\x1b[0m to lint and format your project.");
   } else {
-    console.log('  ✨ Nothing to change - your project is already set up.');
+    console.log("  ✨ Nothing to change - your project is already set up.");
   }
   console.log();
 }
 
 main().catch((err) => {
   console.error(`\n  ⚠️  @wilsoon/eslint-config setup had an issue: ${err.message}`);
-  console.error('     You can set up manually - see the README for instructions.\n');
+  console.error("     You can set up manually - see the README for instructions.\n");
   process.exitCode = 1;
 });

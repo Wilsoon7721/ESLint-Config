@@ -1,5 +1,8 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export const LINT_CMD = "wlint";
 export const LEGACY_LINT_CMDS = ["eslint --fix . && prettier --write .", "eslint --fix . && prettier --write . ", "npx eslint --fix . && npx prettier --write ."];
@@ -11,11 +14,15 @@ export default [
 ];
 `;
 
-export const PRETTIER_CONFIG = `export { default } from '@wilsoon/eslint-config/prettier';
-`;
+export function getDprintConfig() {
+  return readFileSync(resolve(__dirname, "..", "formatter", "dprint.json"), "utf-8");
+}
 
 export const ESLINT_CONFIG_FILES = ["eslint.config.js", "eslint.config.mjs", "eslint.config.cjs", "eslint.config.ts", "eslint.config.mts", "eslint.config.cts"];
 
+export const DPRINT_CONFIG_FILES = ["dprint.json", ".dprint.json", "dprint.jsonc", ".dprint.jsonc"];
+
+// Legacy: still recognised so old installs can be detected / migrated
 export const PRETTIER_CONFIG_FILES = ["prettier.config.js", "prettier.config.mjs", "prettier.config.cjs", ".prettierrc", ".prettierrc.json", ".prettierrc.yml", ".prettierrc.yaml", ".prettierrc.js", ".prettierrc.cjs", ".prettierrc.mjs", ".prettierrc.toml"];
 
 export function getProjectRoot() {
@@ -57,14 +64,17 @@ export function inspectProject(projectRoot) {
   const pkg = readPkg(projectRoot);
   const lintScript = pkg?.json?.scripts?.lint;
   const eslintFile = findConfig(projectRoot, ESLINT_CONFIG_FILES);
-  const prettierFile = findConfig(projectRoot, PRETTIER_CONFIG_FILES);
+  const dprintFile = findConfig(projectRoot, DPRINT_CONFIG_FILES);
+  const legacyPrettierFile = findConfig(projectRoot, PRETTIER_CONFIG_FILES);
 
   return {
     pkg,
     eslintFile,
-    prettierFile,
+    dprintFile,
+    legacyPrettierFile,
     hasEslint: Boolean(eslintFile),
-    hasPrettier: Boolean(prettierFile),
+    hasDprint: Boolean(dprintFile),
+    hasLegacyPrettier: Boolean(legacyPrettierFile),
     lintScript,
     hasLintScript: Boolean(lintScript),
     lintScriptMatches: lintScript === LINT_CMD,
@@ -82,9 +92,9 @@ export function writeEslintConfig(projectRoot, file = null) {
   return name;
 }
 
-export function writePrettierConfig(projectRoot, file = null) {
-  const name = file || `prettier.config.${configExtension(projectRoot)}`;
-  writeFileSync(resolve(projectRoot, name), PRETTIER_CONFIG);
+export function writeDprintConfig(projectRoot, file = null) {
+  const name = file || "dprint.json";
+  writeFileSync(resolve(projectRoot, name), getDprintConfig());
   return name;
 }
 
