@@ -15,6 +15,6 @@ export default {
   'arrowFunction.useParentheses': 'force',
   'jsx.bracketPosition': 'sameLine',
   'memberExpression.linePerExpression': false,
-  useBraces: 'preferNone',
+  useBraces: 'maintain',
   singleBodyPosition: 'maintain'
 };
