@@ -29,14 +29,16 @@ if (argv.includes("-h") || argv.includes("--help")) {
 
   Options:
     --check      Check for issues without modifying files (CI mode)
+    --exit-zero  With --check, always exit 0 instead of failing on issues
     --which      Print which ESLint and dprint would run, then exit
     -h, --help   Show this message
 `);
   process.exit(0);
 }
 
-const CONTROL_FLAGS = new Set(["--which", "--check"]);
+const CONTROL_FLAGS = new Set(["--which", "--check", "--exit-zero"]);
 const checkMode = argv.includes("--check");
+const exitZero = argv.includes("--exit-zero");
 const targets = argv.filter((a) => !CONTROL_FLAGS.has(a));
 const resolvedTargets = targets.length ? targets : ["."];
 
@@ -101,10 +103,10 @@ try {
   const configArgs = dprintConfigArgs();
 
   if (checkMode) {
-    // --check: run both tools without modifying files, always exit 0
-    run("eslint", "eslint", [...resolvedTargets]);
-    run("dprint", "dprint", ["check", ...configArgs, ...resolvedTargets]);
-    process.exit(0);
+    // --check: run both tools without modifying files, exit with the first failing status (or 0 with --exit-zero)
+    const eslintStatus = run("eslint", "eslint", [...resolvedTargets]);
+    const dprintStatus = run("dprint", "dprint", ["check", ...configArgs, ...resolvedTargets]);
+    process.exit(exitZero ? 0 : eslintStatus || dprintStatus);
   }
 
   // Default: fix mode

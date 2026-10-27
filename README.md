@@ -129,14 +129,15 @@ In check mode:
 - ESLint runs **without** `--fix` - it reports issues but doesn't touch files.
 - dprint runs `check` instead of `fmt` - it reports files that would change.
 - **Both tools always run**, regardless of ESLint's exit status.
-- **The exit code is always 0** - check mode is purely informational.
-
-This is ideal for CI pipelines where you want to surface issues without blocking:
+- **The exit code is non-zero if either tool reports a problem** (ESLint's status takes precedence), so CI fails on unlinted or unformatted code.
+- Add `--exit-zero` to always exit 0 and surface issues without blocking.
 
 ```yaml
 # GitHub Actions example
 - run: npm run lint -- --check
-  continue-on-error: true
+
+# Informational only
+- run: npm run lint -- --check --exit-zero
 ```
 
 ---
