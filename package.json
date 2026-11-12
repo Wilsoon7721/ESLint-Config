@@ -1,6 +1,6 @@
 {
   "name": "@wilsoon/eslint-config",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Opinionated ESLint + dprint shared config with custom autofixable rules for cleaner JS/TS code.",
   "type": "module",
   "exports": {
@@ -37,6 +37,9 @@
   "homepage": "https://github.com/Wilsoon7721/ESLint-Config#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "overrides": {
+    "minimatch": "^11.0.8"
   },
   "license": "MIT",
   "dependencies": {
